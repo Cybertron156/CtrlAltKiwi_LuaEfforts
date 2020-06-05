@@ -1,60 +1,40 @@
+//Include Basic Libraries
 #include <iostream>
-//Include C-based lua headers
-extern "C"
-{
-#include "C:/Program Files (x86)/Lua/include/lua.h"
-#include "C:/Program Files (x86)/Lua/include/lauxlib.h"
-#include "C:/Program Files (x86)/Lua/include/lualib.h"
-}
-#ifdef _WIN32
-#pragma comment(lib, "C:/Program Files (x86)/Lua/lua.lib")
-#endif // _WIN32
-
-void PrintFromCPP()
-{
-	std::cout << "Hello!" << std::endl;
-}
-
-//Helper function to check if a LUA-related operation was successful
-bool CheckLua(lua_State* L, int operation)
-{
-	if (operation != LUA_OK)
-	{
-		std::string msg = lua_tostring(L, -1);
-		std::cout << "ERROR:" << msg << std::endl;
-		return false;
-	}
-	else
-		return true;
-}
+#include <fstream>
+#include <string>
+//Include User-Made Headers
+#include "BasicBehavior.h" //Seth
+#include "jsonHelpers.h"   //Adrian
 
 int main()
 {
 	/*
 	Create an instance of a LUA virtual machine (or 'state')
 	This state will be called L (for LUA)
-	To execute LUA code, pass in the state L, and the code will be executed in that state
+	LUA code will be executed using this state at runtime
 	*/
 	lua_State* L = luaL_newstate();
-	/*
-	Make available to our LUA state standard libraries
-	*/
+	//Make standard libraries available to our LUA state
 	luaL_openlibs(L);
 
-	//Put all LUA-referencing code here
-	if (CheckLua(L, luaL_dofile(L, "C:/Users/Seth/Desktop/LUA Fuckery/LUA_PROJECT/LUA_PROJECT/Source/LUABASICTHING.lua")))
-	{
-		lua_getglobal(L, "a");
-		int x = (int)lua_tonumber(L, -1);
-		std::cout << "NUMBER:" << x << std::endl;
-	}
-	
+	//Show off monobehavior function override shit
+	BasicBehavior* bb = new BasicBehavior(L, "Source/LUABASICTHING.lua");
+	for(float dt = 0; dt < 2; dt += .5f)
+		bb->Update(dt);
+	//Other shit
+	int array[2];
+	bb->CallWithReturns("foobar", array, 2);
+	std::cout << "x = " << array[0] << std::endl;
+	std::cout << "y = " << array[1] << std::endl;
+	std::cout << "z = " << bb->SearchInt("z") << std::endl;
+	//Clean up monobehavior
+	delete bb;
 
-	PrintFromCPP();
+	//Test out Adrian's JSON functionality
+	rapidjson::Document document = JSON_setup("Source/j.json");
+	std::cout << "name: " << jsonStr(document.FindMember("name")) << std::endl;
 
-	/*
-	Make sure to clean up the state when you're done with it
-	*/
+	//Make sure to clean up the state when you're done with it
 	lua_close(L);
 
 	return 0;
